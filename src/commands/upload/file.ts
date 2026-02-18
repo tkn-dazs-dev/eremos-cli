@@ -74,6 +74,7 @@ export const uploadFileCommand = new Command('file')
         method: 'PUT',
         headers: putHeaders,
         body: fileContent as unknown as BodyInit,
+        redirect: 'error',
         timeoutMs: 120_000, // 2 minutes for large files.
       });
 

@@ -101,7 +101,7 @@ export const loginCommand = new Command('login')
         const result = await loopback.result;
         code = result.code;
       } catch (e) {
-        console.error(`Authorization failed: ${(e as Error).message}`);
+        console.error(`Authorization failed: ${stripTerminalEscapes((e as Error).message)}`);
         process.exit(1);
         return;
       } finally {
@@ -124,6 +124,7 @@ export const loginCommand = new Command('login')
           redirect_uri: redirectUri,
           client_id: clientId,
         }),
+        redirect: 'error',
         timeoutMs: 20_000,
       });
 

@@ -25,6 +25,7 @@ export const logoutCommand = new Command('logout')
             Authorization: `Bearer ${tokens.access_token}`,
             Accept: 'application/json',
           },
+          redirect: 'error',
           timeoutMs: 10_000,
         });
       } catch {

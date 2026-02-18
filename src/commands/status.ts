@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { loadTokens, isTokenExpired } from '../auth/tokenStore.js';
 import { getValidToken } from '../auth/tokenRefresh.js';
+import { stripTerminalEscapes } from '../utils/sanitize.js';
 
 export const statusCommand = new Command('status')
   .description('Show current authentication status')
@@ -29,8 +30,8 @@ export const statusCommand = new Command('status')
     // Best-effort JWT decode (no verification here).
     try {
       const payload = JSON.parse(Buffer.from(valid.split('.')[1], 'base64url').toString('utf-8')) as Record<string, any>;
-      if (payload.sub) console.log(`  User ID: ${payload.sub}`);
-      if (opts.showEmail && payload.email) console.log(`  Email: ${payload.email}`);
+      if (payload.sub) console.log(`  User ID: ${stripTerminalEscapes(String(payload.sub))}`);
+      if (opts.showEmail && payload.email) console.log(`  Email: ${stripTerminalEscapes(String(payload.email))}`);
     } catch {
       // ignore
     }

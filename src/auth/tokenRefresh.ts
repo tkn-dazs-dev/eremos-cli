@@ -45,6 +45,7 @@ async function refreshAccessToken(tokens: StoredTokens): Promise<StoredTokens | 
         refresh_token: tokens.refresh_token,
         client_id: tokens.client_id,
       }),
+      redirect: 'error',
       timeoutMs: 20_000,
     });
 
