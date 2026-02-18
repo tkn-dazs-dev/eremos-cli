@@ -6,6 +6,7 @@ import { getOauthClientId, getSupabaseUrl } from '../config.js';
 import { fetchWithTimeout } from '../utils/fetch.js';
 import { joinUrl } from '../utils/urls.js';
 import { toFormUrlEncoded } from '../utils/form.js';
+import { stripTerminalEscapes } from '../utils/sanitize.js';
 
 const DEFAULT_OAUTH_SCOPES = 'openid';
 
@@ -135,7 +136,10 @@ export const loginCommand = new Command('login')
       };
 
       if (!tokenResponse.ok) {
-        console.error('Token exchange failed:', tokenData.error_description || tokenData.error || 'Unknown error');
+        console.error(
+          'Token exchange failed:',
+          stripTerminalEscapes(String(tokenData.error_description || tokenData.error || 'Unknown error')),
+        );
         process.exit(1);
         return;
       }

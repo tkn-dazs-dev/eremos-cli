@@ -3,6 +3,8 @@
  * No external dependencies — uses only Node.js builtins.
  */
 
+import { stripTerminalEscapes, sanitizeValue } from './sanitize.js';
+
 export interface ColumnDef {
   key: string;
   label: string;
@@ -89,7 +91,8 @@ export function printKeyValue(record: Record<string, unknown>, fields: FieldDef[
   for (const field of fields) {
     const val = record[field.key];
     if (val === undefined || val === null) continue;
-    const formatted = field.transform ? field.transform(val) : String(val);
+    const safeVal = sanitizeValue(val);
+    const formatted = field.transform ? field.transform(safeVal) : String(safeVal);
     const label = field.label.padEnd(maxLabel);
     process.stdout.write(`${colors.dim(label)}  ${formatted}\n`);
   }
@@ -97,28 +100,30 @@ export function printKeyValue(record: Record<string, unknown>, fields: FieldDef[
 
 /** Print a success message (green checkmark). */
 export function printSuccess(message: string): void {
-  process.stderr.write(colors.green('✓') + ' ' + message + '\n');
+  process.stderr.write(colors.green('✓') + ' ' + stripTerminalEscapes(message) + '\n');
 }
 
 /** Print an error message to stderr. */
 export function printError(message: string): void {
-  process.stderr.write(colors.red('error:') + ' ' + message + '\n');
+  process.stderr.write(colors.red('error:') + ' ' + stripTerminalEscapes(message) + '\n');
 }
 
 /** Print pagination info to stderr. */
 export function printPagination(meta?: { next_cursor?: string | null; has_more?: boolean }): void {
   if (meta?.has_more && meta.next_cursor) {
-    process.stderr.write(colors.dim(`(more results available, use --cursor ${meta.next_cursor})`) + '\n');
+    const cursor = stripTerminalEscapes(meta.next_cursor);
+    process.stderr.write(colors.dim(`(more results available, use --cursor ${cursor})`) + '\n');
   }
 }
 
 // Helpers
 
 function formatCell(value: unknown, transform?: (v: unknown) => string): string {
-  if (transform) return transform(value);
-  if (value === null || value === undefined) return colors.dim('—');
-  if (Array.isArray(value)) return value.join(', ');
-  return String(value);
+  const safe = sanitizeValue(value);
+  if (transform) return transform(safe);
+  if (safe === null || safe === undefined) return colors.dim('—');
+  if (Array.isArray(safe)) return safe.join(', ');
+  return String(safe);
 }
 
 function pad(text: string, width: number): string {

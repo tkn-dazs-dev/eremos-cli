@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeFileName, safePathSegment } from '../utils/sanitize.js';
+import { sanitizeFileName, safePathSegment, stripTerminalEscapes, sanitizeValue } from '../utils/sanitize.js';
 
 describe('sanitizeFileName', () => {
   it('replaces CR, LF, NUL with underscores', () => {
@@ -57,5 +57,86 @@ describe('safePathSegment', () => {
 
   it('allows single dots', () => {
     expect(safePathSegment('file.txt')).toBe('file.txt');
+  });
+});
+
+describe('stripTerminalEscapes', () => {
+  it('strips CSI color sequences', () => {
+    expect(stripTerminalEscapes('\x1b[31mred\x1b[0m')).toBe('red');
+  });
+
+  it('strips CSI cursor/screen control sequences', () => {
+    expect(stripTerminalEscapes('\x1b[?25l')).toBe('');
+    expect(stripTerminalEscapes('\x1b[2J')).toBe('');
+    expect(stripTerminalEscapes('\x1b[10;20H')).toBe('');
+  });
+
+  it('strips OSC sequences (title change)', () => {
+    expect(stripTerminalEscapes('\x1b]0;evil title\x07')).toBe('');
+    expect(stripTerminalEscapes('\x1b]0;evil\x1b\\')).toBe('');
+  });
+
+  it('strips C0 control characters and DEL', () => {
+    expect(stripTerminalEscapes('a\x00b\x01c\x7fd')).toBe('abcd');
+    expect(stripTerminalEscapes('line\r\nbreak')).toBe('linebreak');
+  });
+
+  it('preserves normal text', () => {
+    expect(stripTerminalEscapes('Hello, world!')).toBe('Hello, world!');
+  });
+
+  it('preserves multibyte characters', () => {
+    expect(stripTerminalEscapes('日本語テスト')).toBe('日本語テスト');
+    expect(stripTerminalEscapes('café résumé')).toBe('café résumé');
+  });
+
+  it('handles mixed malicious and normal content', () => {
+    expect(stripTerminalEscapes('safe\x1b[31m\x1b]0;pwned\x07\x00text')).toBe('safetext');
+  });
+
+  it('strips C1 8-bit CSI sequences', () => {
+    expect(stripTerminalEscapes('A\u009b31mB\u009b0mC')).toBe('ABC');
+  });
+
+  it('strips C1 8-bit OSC sequences', () => {
+    expect(stripTerminalEscapes('X\u009d0;evil\u009cY')).toBe('XY');
+  });
+
+  it('strips C1 control characters (0x80-0x9f)', () => {
+    expect(stripTerminalEscapes('a\x80b\x8fc\x9fd')).toBe('abcd');
+  });
+});
+
+describe('sanitizeValue', () => {
+  it('sanitizes strings', () => {
+    expect(sanitizeValue('\x1b[31mred\x1b[0m')).toBe('red');
+  });
+
+  it('passes through non-string primitives', () => {
+    expect(sanitizeValue(42)).toBe(42);
+    expect(sanitizeValue(true)).toBe(true);
+    expect(sanitizeValue(null)).toBe(null);
+    expect(sanitizeValue(undefined)).toBe(undefined);
+  });
+
+  it('recursively sanitizes arrays', () => {
+    expect(sanitizeValue(['a\x1b[31m', 'b\x00'])).toEqual(['a', 'b']);
+  });
+
+  it('recursively sanitizes objects', () => {
+    expect(sanitizeValue({ name: 'ok\x1b[31m', count: 5 })).toEqual({ name: 'ok', count: 5 });
+  });
+
+  it('recursively sanitizes nested structures', () => {
+    const input = { author: { handle: 'user\x1b[0m', tags: ['a\x00', 'b'] } };
+    expect(sanitizeValue(input)).toEqual({ author: { handle: 'user', tags: ['a', 'b'] } });
+  });
+
+  it('handles circular references without crashing', () => {
+    const obj: Record<string, unknown> = { a: 'hello\x1b[31m' };
+    obj.self = obj;
+    const result = sanitizeValue(obj) as Record<string, unknown>;
+    expect(result.a).toBe('hello');
+    expect(result.self).toBe('[Circular]');
   });
 });

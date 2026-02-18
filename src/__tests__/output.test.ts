@@ -122,6 +122,45 @@ describe('output', () => {
     });
   });
 
+  describe('terminal escape sanitization', () => {
+    it('strips ANSI escapes from table cell values', () => {
+      const cols: ColumnDef[] = [{ key: 'name', label: 'Name', width: 20 }];
+      printTable([{ name: '\x1b[31mevil\x1b[0m' }], cols);
+      const output = stdoutSpy.mock.calls.map((c) => c[0]).join('');
+      expect(output).toContain('evil');
+      expect(output).not.toContain('\x1b[31m');
+    });
+
+    it('strips control characters from key-value display', () => {
+      const fields: FieldDef[] = [{ key: 'bio', label: 'Bio' }];
+      printKeyValue({ bio: 'hello\x00\x1b[31mworld' }, fields);
+      const output = stdoutSpy.mock.calls.map((c) => c[0]).join('');
+      expect(output).toContain('helloworld');
+      expect(output).not.toContain('\x1b[31m');
+      expect(output).not.toContain('\x00');
+    });
+
+    it('strips control characters from error messages', () => {
+      printError('fail\x1b[31m\x00msg');
+      const output = stderrSpy.mock.calls.map((c) => c[0]).join('');
+      expect(output).toContain('failmsg');
+      expect(output).not.toContain('\x00');
+    });
+
+    it('strips control characters from success messages', () => {
+      printSuccess('done\x1b]0;pwned\x07!');
+      const output = stderrSpy.mock.calls.map((c) => c[0]).join('');
+      expect(output).toContain('done!');
+    });
+
+    it('strips ANSI escapes from pagination cursor', () => {
+      printPagination({ has_more: true, next_cursor: 'abc\x1b[31m123' });
+      const output = stderrSpy.mock.calls.map((c) => c[0]).join('');
+      expect(output).toContain('abc123');
+      expect(output).not.toContain('\x1b[31m');
+    });
+  });
+
   describe('NO_COLOR', () => {
     it('respects NO_COLOR environment variable', () => {
       // NO_COLOR is checked at import time, so this test is best-effort.
