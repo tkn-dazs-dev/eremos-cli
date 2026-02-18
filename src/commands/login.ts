@@ -21,7 +21,7 @@ export const loginCommand = new Command('login')
       supabaseUrl = getSupabaseUrl();
       clientId = getOauthClientId();
     } catch (e) {
-      console.error(`Error: ${(e as Error).message}`);
+      console.error(`Error: ${stripTerminalEscapes((e as Error).message)}`);
       process.exit(1);
       return;
     }
@@ -35,7 +35,7 @@ export const loginCommand = new Command('login')
     const loopback = opts.manual
       ? null
       : await startLoopbackServer(state).catch((e: Error) => {
-          console.error(`Error: ${e.message}`);
+          console.error(`Error: ${stripTerminalEscapes(e.message)}`);
           process.exit(1);
           return null;
         });
@@ -90,7 +90,7 @@ export const loginCommand = new Command('login')
 
         code = urlCode;
       } catch (e) {
-        console.error(`Error: ${(e as Error).message || 'Invalid callback URL'}`);
+        console.error(`Error: ${stripTerminalEscapes((e as Error).message || 'Invalid callback URL')}`);
         process.exit(1);
         return;
       }
@@ -167,7 +167,7 @@ export const loginCommand = new Command('login')
       console.log('Login successful!');
       console.log('Tokens saved to ~/.eremos/credentials.json');
     } catch (e) {
-      console.error(`Login failed: ${(e as Error).message}`);
+      console.error(`Login failed: ${stripTerminalEscapes((e as Error).message)}`);
       process.exit(1);
     }
   });

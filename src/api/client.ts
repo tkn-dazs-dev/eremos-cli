@@ -4,6 +4,7 @@ import { getApiUrl, VERSION } from '../config.js';
 import { AuthError, parseApiResponse } from '../utils/errors.js';
 import { fetchWithTimeout } from '../utils/fetch.js';
 import { joinUrl } from '../utils/urls.js';
+import { stripTerminalEscapes } from '../utils/sanitize.js';
 
 let cachedApiUrl: URL | null = null;
 
@@ -60,7 +61,7 @@ export async function apiRequest(path: string, options: ApiRequestOptions = {}):
   const start = verbose ? performance.now() : 0;
 
   if (verbose) {
-    process.stderr.write(`> ${method} ${url}\n`);
+    process.stderr.write(`> ${method} ${stripTerminalEscapes(String(url))}\n`);
   }
 
   const response = await fetchWithTimeout(url, {
@@ -72,7 +73,7 @@ export async function apiRequest(path: string, options: ApiRequestOptions = {}):
 
   if (verbose) {
     const elapsed = Math.round(performance.now() - start);
-    process.stderr.write(`< ${response.status} ${response.statusText} (${elapsed}ms)\n`);
+    process.stderr.write(`< ${response.status} ${stripTerminalEscapes(response.statusText)} (${elapsed}ms)\n`);
   }
 
   return response;

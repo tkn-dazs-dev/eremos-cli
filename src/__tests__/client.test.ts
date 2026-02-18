@@ -121,6 +121,31 @@ describe('client', () => {
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toBe('https://eremos.jp/api/contents');
     });
+
+    it('sanitizes verbose status output to prevent terminal escape injection', async () => {
+      mockGetValidToken.mockResolvedValue('test-token');
+      mockFetch.mockResolvedValue({
+        status: 500,
+        statusText: '\x1b[31mFAIL\x1b[0m\x00',
+      } as unknown as Response);
+
+      const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      const originalArgv = process.argv.slice();
+      process.argv = ['node', 'eremos', '--verbose'];
+      let output = '';
+
+      try {
+        await apiRequest('/api/test');
+        output = stderrSpy.mock.calls.map((call) => String(call[0])).join('');
+      } finally {
+        process.argv = originalArgv;
+        stderrSpy.mockRestore();
+      }
+
+      expect(output).toContain('< 500 FAIL (');
+      expect(output).not.toContain('\x1b[31m');
+      expect(output).not.toContain('\x00');
+    });
   });
 
   describe('apiCall', () => {

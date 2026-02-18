@@ -15,7 +15,7 @@ export const statusCommand = new Command('status')
     }
 
     console.log('Authentication Status:');
-    console.log(`  Client ID: ${tokens.client_id}`);
+    console.log(`  Client ID: ${stripTerminalEscapes(tokens.client_id)}`);
     console.log(`  Token expires: ${new Date(tokens.expires_at * 1000).toLocaleString()}`);
     console.log(`  Expired: ${isTokenExpired(tokens) ? 'Yes' : 'No'}`);
 
