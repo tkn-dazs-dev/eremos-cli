@@ -6,7 +6,6 @@ import { userLikesCommand } from './likes.js';
 import { userFollowersCommand, userFollowingCommand } from './followers.js';
 import { userFollowCommand, userUnfollowCommand } from './follow.js';
 import { userSuggestedCommand } from './suggested.js';
-import { userUpdateCommand } from './update.js';
 
 export const userCommand = new Command('user').description('User profile commands');
 
@@ -19,4 +18,3 @@ userCommand.addCommand(userFollowingCommand);
 userCommand.addCommand(userFollowCommand);
 userCommand.addCommand(userUnfollowCommand);
 userCommand.addCommand(userSuggestedCommand);
-userCommand.addCommand(userUpdateCommand);

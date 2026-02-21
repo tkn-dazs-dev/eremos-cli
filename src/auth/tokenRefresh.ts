@@ -2,7 +2,10 @@ import { getSupabaseUrl } from '../config.js';
 import { fetchWithTimeout } from '../utils/fetch.js';
 import { joinUrl } from '../utils/urls.js';
 import { toFormUrlEncoded } from '../utils/form.js';
+import { stripTerminalEscapes } from '../utils/sanitize.js';
 import { loadTokens, saveTokens, isTokenExpired, type StoredTokens } from './tokenStore.js';
+
+const verbose = () => process.argv.includes('--verbose');
 
 /**
  * Get a valid access token, refreshing if expired.
@@ -31,8 +34,10 @@ async function refreshAccessToken(tokens: StoredTokens): Promise<StoredTokens | 
   try {
     const supabaseUrl = getSupabaseUrl();
     tokenEndpoint = joinUrl(supabaseUrl, '/auth/v1/oauth/token');
-  } catch {
-    // If SUPABASE_URL is missing/misconfigured, we can't refresh.
+  } catch (e) {
+    if (verbose()) {
+      process.stderr.write(`[token-refresh] config error: ${stripTerminalEscapes(e instanceof Error ? e.message : String(e))}\n`);
+    }
     return null;
   }
 
@@ -49,7 +54,12 @@ async function refreshAccessToken(tokens: StoredTokens): Promise<StoredTokens | 
       timeoutMs: 20_000,
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      if (verbose()) {
+        process.stderr.write(`[token-refresh] server returned ${response.status}\n`);
+      }
+      return null;
+    }
 
     const data = (await response.json()) as {
       access_token?: string;
@@ -68,7 +78,10 @@ async function refreshAccessToken(tokens: StoredTokens): Promise<StoredTokens | 
 
     saveTokens(newTokens);
     return newTokens;
-  } catch {
+  } catch (e) {
+    if (verbose()) {
+      process.stderr.write(`[token-refresh] failed: ${stripTerminalEscapes(e instanceof Error ? e.message : String(e))}\n`);
+    }
     return null;
   }
 }

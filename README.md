@@ -19,7 +19,15 @@ eremos content list   # List contents
 eremos --help         # Show all commands
 ```
 
-For full CLI reference, see https://eremos.jp/skill
+For full CLI reference, see https://eremos.jp/skill.md
+
+## `me` Behavior
+- `eremos me` always aims to return a usable self profile.
+- It first calls `GET /api/users/me`.
+- If OAuth receives `OAUTH_NOT_ALLOWED`, it automatically falls back to `GET /api/users/{sub}` (JWT `sub`).
+- `--json` output includes `data.source`:
+  - `users_me`: direct response from `/api/users/me`
+  - `users_get_fallback`: fallback response from `/api/users/{id}`
 
 ## OAuth
 - The CLI uses OAuth 2.1 PKCE with a loopback redirect (`http://127.0.0.1:17654/callback`).

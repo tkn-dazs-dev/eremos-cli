@@ -114,6 +114,26 @@ describe('content create (integration)', () => {
     expect(payload.media_url).toBe('https://cdn.example.com/img.png');
   });
 
+  it('accepts thread as content type', async () => {
+    const responseBody = {
+      data: { id: 'thread-id', title: 'Thread', content_type: 'thread', is_published: false },
+    };
+    mockFetch.mockResolvedValue(new Response(JSON.stringify(responseBody), { status: 200 }));
+
+    await createContentAction({ title: 'Thread', type: 'thread', draft: true });
+
+    const [, opts] = mockFetch.mock.calls[0];
+    const payload = JSON.parse(opts?.body as string);
+    expect(payload.content_type).toBe('thread');
+  });
+
+  it('rejects invalid content type before API call', async () => {
+    await expect(createContentAction({ title: 'Bad', type: 'invalid_type' })).rejects.toThrow(
+      'Invalid content type',
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it('includes Idempotency-Key header', async () => {
     const responseBody = {
       data: { id: 'idem-id', title: 'Test', content_type: 'text', is_published: true },

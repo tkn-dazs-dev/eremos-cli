@@ -14,6 +14,47 @@ const resultFields: FieldDef[] = [
   { key: 'is_published', label: 'Published', transform: (v) => (v ? 'Yes' : 'Draft') },
 ];
 
+type ContentUpdateOptions = {
+  title?: string;
+  body?: string;
+  file?: string;
+  description?: string;
+  tags?: string;
+  publish?: boolean;
+  unpublish?: boolean;
+  mediaUrl?: string;
+  thumbnailUrl?: string;
+  seriesId?: string;
+  series?: boolean;
+  noSeries?: boolean;
+};
+
+export function buildContentUpdatePayload(opts: ContentUpdateOptions): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+
+  if (opts.title) payload.title = opts.title;
+  if (opts.description) payload.description = opts.description;
+  if (opts.mediaUrl) payload.media_url = opts.mediaUrl;
+  if (opts.thumbnailUrl) payload.thumbnail_url = opts.thumbnailUrl;
+
+  if (opts.publish) payload.is_published = true;
+  if (opts.unpublish) payload.is_published = false;
+
+  const removeSeries = opts.noSeries === true || opts.series === false;
+
+  if (opts.seriesId) {
+    payload.series_id = opts.seriesId;
+  } else if (removeSeries) {
+    payload.series_id = null;
+  }
+
+  if (opts.tags) {
+    payload.tags = opts.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+  }
+
+  return payload;
+}
+
 export const contentUpdateCommand = new Command('update')
   .description('Update existing content')
   .argument('<id>', 'Content ID')
@@ -32,26 +73,7 @@ export const contentUpdateCommand = new Command('update')
     withErrorHandler(async (id: string, opts, cmd) => {
       await requireAuth();
       const json = cmd.parent?.parent?.opts().json;
-
-      const payload: Record<string, unknown> = {};
-
-      if (opts.title) payload.title = opts.title;
-      if (opts.description) payload.description = opts.description;
-      if (opts.mediaUrl) payload.media_url = opts.mediaUrl;
-      if (opts.thumbnailUrl) payload.thumbnail_url = opts.thumbnailUrl;
-
-      if (opts.publish) payload.is_published = true;
-      if (opts.unpublish) payload.is_published = false;
-
-      if (opts.seriesId) {
-        payload.series_id = opts.seriesId;
-      } else if (opts.series === false) {
-        payload.series_id = null;
-      }
-
-      if (opts.tags) {
-        payload.tags = (opts.tags as string).split(',').map((t: string) => t.trim()).filter(Boolean);
-      }
+      const payload = buildContentUpdatePayload(opts as ContentUpdateOptions);
 
       let bodyText = opts.body;
       if (opts.file) {
@@ -65,6 +87,7 @@ export const contentUpdateCommand = new Command('update')
 
       const result = await apiCall<Record<string, unknown>>(`/api/contents/${safePathSegment(id)}`, {
         method: 'PUT',
+        idempotent: true,
         body: JSON.stringify(payload),
       });
 

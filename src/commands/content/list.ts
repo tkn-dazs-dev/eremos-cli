@@ -14,7 +14,7 @@ const columns: ColumnDef[] = [
 
 export const contentListCommand = new Command('list')
   .description('List contents')
-  .option('--type <type>', 'Filter by content type')
+  .option('--type <type>', 'Filter by content type (text, image, video, music, novel, article, thread)')
   .option('--period <period>', 'Time period (day, week, month, all)')
   .option('--sort <sort>', 'Sort order (latest, popular)')
   .option('--limit <n>', 'Results per page', '20')

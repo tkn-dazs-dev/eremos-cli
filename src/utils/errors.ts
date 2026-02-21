@@ -5,6 +5,7 @@
  *   0 = success
  *   1 = API / network error
  *   2 = argument error (usage)
+ *   3 = authorization error (forbidden / scope)
  *   4 = authentication error
  */
 
@@ -31,6 +32,7 @@ function exitCodeForError(err: unknown): number {
   if (err instanceof AuthError) return 4;
   if (err instanceof ApiError) {
     if (err.status === 401) return 4;
+    if (err.status === 403) return 3;
     return 1;
   }
   return 1;

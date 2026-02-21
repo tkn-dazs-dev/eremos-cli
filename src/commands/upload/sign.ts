@@ -27,10 +27,15 @@ export const uploadSignCommand = new Command('sign')
         throw new Error(`Unsupported content type: ${opts.contentType}`);
       }
 
+      const sizeBytes = Number(opts.sizeBytes);
+      if (!Number.isSafeInteger(sizeBytes) || sizeBytes <= 0) {
+        throw new Error('--size-bytes must be a positive integer');
+      }
+
       const payload: Record<string, unknown> = {
         filename: opts.filename,
         contentType: opts.contentType,
-        sizeBytes: Number(opts.sizeBytes),
+        sizeBytes,
       };
       if (opts.contentId) payload.contentId = opts.contentId;
 

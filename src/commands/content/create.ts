@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError, Option } from 'commander';
 import { readFileSync } from 'fs';
 import { apiCall, requireAuth } from '../../api/client.js';
 import { withErrorHandler } from '../../utils/errors.js';
@@ -6,6 +6,8 @@ import { printJson, printKeyValue, printSuccess, type FieldDef } from '../../uti
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MiB
 const MAX_METADATA_BYTES = 1 * 1024 * 1024; // 1 MiB
+export const CONTENT_TYPES = ['text', 'image', 'video', 'music', 'novel', 'article', 'thread'] as const;
+type ContentType = (typeof CONTENT_TYPES)[number];
 
 const resultFields: FieldDef[] = [
   { key: 'id', label: 'ID' },
@@ -16,7 +18,7 @@ const resultFields: FieldDef[] = [
 
 export interface CreateContentOptions {
   title: string;
-  type?: string;
+  type?: ContentType | string;
   body?: string;
   file?: string;
   description?: string;
@@ -29,6 +31,17 @@ export interface CreateContentOptions {
   aiLevel?: string;
   seriesId?: string;
   aiMetadataFile?: string;
+  json?: boolean;
+}
+
+export function parseContentType(value: string): ContentType {
+  const normalized = value.trim().toLowerCase();
+  if ((CONTENT_TYPES as readonly string[]).includes(normalized)) {
+    return normalized as ContentType;
+  }
+  throw new InvalidArgumentError(
+    `Invalid content type: ${value}. Allowed: ${CONTENT_TYPES.join(', ')}`,
+  );
 }
 
 /**
@@ -36,7 +49,8 @@ export interface CreateContentOptions {
  */
 export async function createContentAction(opts: CreateContentOptions): Promise<void> {
   await requireAuth();
-  const json = process.argv.includes('--json');
+  const json = opts.json ?? false;
+  const contentType = parseContentType(opts.type ?? 'text');
 
   let bodyText = opts.body ?? '';
 
@@ -50,7 +64,7 @@ export async function createContentAction(opts: CreateContentOptions): Promise<v
 
   const payload: Record<string, unknown> = {
     title: opts.title,
-    content_type: opts.type ?? 'text',
+    content_type: contentType,
     is_published: !opts.draft,
   };
 
@@ -99,7 +113,11 @@ export async function createContentAction(opts: CreateContentOptions): Promise<v
 export const contentCreateCommand = new Command('create')
   .description('Create new content')
   .requiredOption('-t, --title <title>', 'Content title')
-  .option('--type <type>', 'Content type (text, image, video, music, novel, article)', 'text')
+  .addOption(
+    new Option('--type <type>', `Content type (${CONTENT_TYPES.join(', ')})`)
+      .choices([...CONTENT_TYPES])
+      .default('text'),
+  )
   .option('-b, --body <body>', 'Text content body')
   .option('-f, --file <file>', 'Read body from file')
   .option('-d, --description <description>', 'Content description')
@@ -113,7 +131,8 @@ export const contentCreateCommand = new Command('create')
   .option('--series-id <id>', 'Series ID to add content to')
   .option('--ai-metadata-file <path>', 'JSON file with ai_metadata')
   .action(
-    withErrorHandler(async (opts) => {
-      await createContentAction(opts);
+    withErrorHandler(async (opts, cmd) => {
+      const json = cmd.parent?.parent?.opts().json ?? false;
+      await createContentAction({ ...opts, json });
     }),
   );

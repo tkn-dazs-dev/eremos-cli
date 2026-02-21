@@ -16,10 +16,12 @@ export const loginCommand = new Command('login')
   .action(async (opts: { manual?: boolean }) => {
     let supabaseUrl: URL;
     let clientId: string;
+    let redirectUri: string;
 
     try {
       supabaseUrl = getSupabaseUrl();
       clientId = getOauthClientId();
+      redirectUri = getLoopbackRedirectUri();
     } catch (e) {
       console.error(`Error: ${stripTerminalEscapes((e as Error).message)}`);
       process.exit(1);
@@ -29,7 +31,6 @@ export const loginCommand = new Command('login')
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState();
-    const redirectUri = getLoopbackRedirectUri();
 
     // Start loopback server before opening the browser (race avoidance).
     const loopback = opts.manual

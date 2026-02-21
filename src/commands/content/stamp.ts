@@ -4,6 +4,12 @@ import { withErrorHandler } from '../../utils/errors.js';
 import { printJson, printTable, printSuccess, type ColumnDef } from '../../utils/output.js';
 import { safePathSegment } from '../../utils/sanitize.js';
 
+type StampsResponse = {
+  stamp_counts: { [stampId: string]: number };
+  stamp_updated_at: { [stampId: string]: string };
+  user_stamps: string[];
+};
+
 const stampColumns: ColumnDef[] = [
   { key: 'stamp_id', label: 'Stamp ID', width: 36 },
   { key: 'count', label: 'Count', width: 6 },
@@ -16,12 +22,18 @@ export const contentStampsCommand = new Command('stamps')
   .action(
     withErrorHandler(async (id: string, _opts, cmd) => {
       const json = cmd.parent?.parent?.opts().json;
-      const result = await apiCall<Record<string, unknown>[]>(`/api/contents/${safePathSegment(id)}/stamps`);
+      const result = await apiCall<StampsResponse>(`/api/contents/${safePathSegment(id)}/stamps`);
 
       if (json) {
         printJson(result);
       } else {
-        printTable(result.data, stampColumns);
+        const userStampIds = new Set(result.data.user_stamps ?? []);
+        const rows = Object.entries(result.data.stamp_counts ?? {}).map(([stampId, count]) => ({
+          stamp_id: stampId,
+          count,
+          user_stamped: userStampIds.has(stampId),
+        }));
+        printTable(rows, stampColumns);
       }
     }),
   );

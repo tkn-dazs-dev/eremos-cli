@@ -24,8 +24,7 @@ program
   .description('Eremos CLI - interact with the Eremos platform')
   .version(VERSION)
   .option('--json', 'Output as JSON')
-  .option('--verbose', 'Show HTTP request details')
-  .exitOverride();
+  .option('--verbose', 'Show HTTP request details');
 
 // Auth commands.
 program.addCommand(loginCommand);
@@ -48,6 +47,15 @@ program.addCommand(aiToolCommand);
 
 // Deprecated (backward compat).
 program.addCommand(postCommand);
+
+function applyExitOverrideRecursively(command: Command): void {
+  command.exitOverride();
+  for (const sub of command.commands) {
+    applyExitOverrideRecursively(sub);
+  }
+}
+
+applyExitOverrideRecursively(program);
 
 try {
   program.parse();

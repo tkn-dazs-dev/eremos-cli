@@ -103,6 +103,14 @@ describe('errors', () => {
       expect(exitSpy).toHaveBeenCalledWith(4);
     });
 
+    it('exits with code 3 for 403 ApiError', async () => {
+      const action = withErrorHandler(async () => {
+        throw new ApiError(403, { code: 'INSUFFICIENT_SCOPE', message: 'Insufficient OAuth permissions' });
+      });
+      await action();
+      expect(exitSpy).toHaveBeenCalledWith(3);
+    });
+
     it('exits with code 1 for other ApiErrors', async () => {
       const action = withErrorHandler(async () => {
         throw new ApiError(404, { code: 'NOT_FOUND', message: 'Not found' });

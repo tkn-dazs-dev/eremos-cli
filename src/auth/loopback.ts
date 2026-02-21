@@ -37,6 +37,19 @@ export async function startLoopbackServer(expectedState: string): Promise<Loopba
   let done = false;
   let server: http.Server | null = null;
 
+  const shutdownServer = () => {
+    try {
+      server?.close();
+    } catch {
+      // ignore
+    }
+    try {
+      server?.closeAllConnections();
+    } catch {
+      // ignore
+    }
+  };
+
   let resolveResult!: (r: CallbackResult) => void;
   let rejectResult!: (e: Error) => void;
   const result = new Promise<CallbackResult>((resolve, reject) => {
@@ -50,11 +63,7 @@ export async function startLoopbackServer(expectedState: string): Promise<Loopba
     try {
       fn();
     } finally {
-      try {
-        server?.close();
-      } catch {
-        // ignore
-      }
+      shutdownServer();
     }
   };
 
@@ -145,11 +154,7 @@ export async function startLoopbackServer(expectedState: string): Promise<Loopba
       if (done) return;
       done = true;
       clearTimeout(timeout);
-      try {
-        server?.close();
-      } catch {
-        // ignore
-      }
+      shutdownServer();
     },
   };
 }

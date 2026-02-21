@@ -73,7 +73,7 @@ export const uploadFileCommand = new Command('file')
       const putResponse = await fetchWithTimeout(upload_url, {
         method: 'PUT',
         headers: putHeaders,
-        body: fileContent as unknown as BodyInit,
+        body: fileContent,
         redirect: 'error',
         timeoutMs: 120_000, // 2 minutes for large files.
       });
