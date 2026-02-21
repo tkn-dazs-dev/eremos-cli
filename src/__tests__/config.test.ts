@@ -9,12 +9,7 @@ import {
 
 describe('config', () => {
   const envBackup: Record<string, string | undefined> = {};
-  const ENV_KEYS = [
-    'EREMOS_SUPABASE_URL',
-    'EREMOS_API_URL',
-    'EREMOS_OAUTH_CLIENT_ID',
-    'EREMOS_LOOPBACK_PORT',
-  ];
+  const ENV_KEYS = ['EREMOS_LOOPBACK_PORT'];
 
   beforeEach(() => {
     for (const key of ENV_KEYS) {
@@ -49,7 +44,7 @@ describe('config', () => {
     expect(url.protocol).toBe('https:');
   });
 
-  it('getOauthClientId returns default client ID', () => {
+  it('getOauthClientId returns client ID', () => {
     expect(getOauthClientId()).toMatch(/^[0-9a-f-]{36}$/);
   });
 
@@ -57,29 +52,9 @@ describe('config', () => {
     expect(getLoopbackPort()).toBe(17654);
   });
 
-  it('respects EREMOS_API_URL override', () => {
-    process.env.EREMOS_API_URL = 'https://staging.eremos.jp';
-    expect(getApiUrl().hostname).toBe('staging.eremos.jp');
-  });
-
-  it('respects EREMOS_SUPABASE_URL override', () => {
-    process.env.EREMOS_SUPABASE_URL = 'https://auth-staging.eremos.jp';
-    expect(getSupabaseUrl().hostname).toBe('auth-staging.eremos.jp');
-  });
-
   it('respects EREMOS_LOOPBACK_PORT override', () => {
     process.env.EREMOS_LOOPBACK_PORT = '18000';
     expect(getLoopbackPort()).toBe(18000);
-  });
-
-  it('respects EREMOS_OAUTH_CLIENT_ID override', () => {
-    process.env.EREMOS_OAUTH_CLIENT_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-    expect(getOauthClientId()).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-  });
-
-  it('rejects empty EREMOS_OAUTH_CLIENT_ID', () => {
-    process.env.EREMOS_OAUTH_CLIENT_ID = '   ';
-    expect(() => getOauthClientId()).toThrow('must not be empty');
   });
 
   it('rejects invalid EREMOS_LOOPBACK_PORT', () => {
