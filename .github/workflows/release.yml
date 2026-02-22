@@ -24,7 +24,11 @@ jobs:
       - run: npm test
       - run: npm run build
 
+      # Initial publish uses NPM_TOKEN. After package exists on npm,
+      # switch to Trusted Publishing (OIDC) and remove NODE_AUTH_TOKEN.
       - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         env:
