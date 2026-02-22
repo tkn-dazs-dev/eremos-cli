@@ -1,4 +1,7 @@
-export const VERSION = '0.1.0';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
+export const VERSION = pkg.version;
 const SUPABASE_URL = 'https://auth.eremos.jp';
 const API_URL = 'https://eremos.jp';
 const OAUTH_CLIENT_ID = '28127dd8-2f0b-4809-80ab-08c6b919ef9b';

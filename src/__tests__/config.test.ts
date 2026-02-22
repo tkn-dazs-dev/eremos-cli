@@ -28,8 +28,8 @@ describe('config', () => {
     }
   });
 
-  it('exports VERSION', () => {
-    expect(VERSION).toBe('0.1.0');
+  it('exports VERSION from package.json', () => {
+    expect(VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('getSupabaseUrl returns default URL', () => {
